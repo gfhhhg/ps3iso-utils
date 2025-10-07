@@ -1,5 +1,4 @@
-/* 
-    (c) 2013 Estwald/Hermes <www.elotrolado.net>
+/* (c) 2013 Estwald/Hermes <www.elotrolado.net>
 
     EXTRACTPS3ISO is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -559,7 +558,7 @@ int main(int argc, const char* argv[])
     }
 
     u32 lba0 = isonum_731(&sect_descriptor.type_l_path_table[0]); // lba
-    u32 size0 = isonum_733(&sect_descriptor.path_table_size[0]); // tama�o
+    u32 size0 = isonum_733(&sect_descriptor.path_table_size[0]); // tamaño
     //printf("lba0 %u size %u %u\n", lba0, size0, ((size0 + 2047)/2048) * 2048);
     
     if(fseeko64(fp, lba0 * 2048, SEEK_SET)<0) {
@@ -772,8 +771,12 @@ int main(int argc, const char* argv[])
                     
                 }
 
-                if((int) idr->name_len[0] > 1 && idr->flags[0] != 0x2 &&
-                    if((int)idr->name_len[0] > 1 && idr->flags[0] != 0x02) { // skip directories
+                // ----------------- 修复点 1：放松文件识别条件 -----------------
+                // 原始代码:
+                // if((int) idr->name_len[0] > 1 && idr->flags[0] != 0x2 &&
+                //     idr->name[idr->name_len[0] - 1]== '1' && idr->name[idr->name_len[0] - 3]== ';') { // skip directories
+                // 修复后的代码：
+                if((int) idr->name_len[0] > 1 && idr->flags[0] != 0x2) { // 检查是否为文件记录 (name_len > 1 且 flags != 0x2)
                     
                     memset(wstring, 0, 512 * 2);
                     memcpy(wstring, idr->name, idr->name_len[0]);
@@ -806,9 +809,15 @@ int main(int argc, const char* argv[])
                         }
                     }
 
+                    // ----------------- 修复点 2：安全去除版本号 -----------------
                     int len = strlen(string);
-
-                    string[len - 2] = 0; // break ";1" string
+                    
+                    // 安全地去除 ISO 9660 版本号 ";N" (例如 ";1")
+                    // 检查倒数第二个字符是否为 ';'
+                    if(len >= 2 && string[len - 2] == ';') {
+                        string[len - 2] = 0; // break ";1" string, 适用于所有版本号 ;N
+                    } 
+                    // 原始代码: string[len - 2] = 0; // break ";1" string
                     
                     len = strlen(string2);
                     strcat(string2, "/");
