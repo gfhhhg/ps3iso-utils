@@ -8,14 +8,14 @@ on:
 
 jobs:
   msys:
-    runs-on: windows-2019
+    runs-on: windows-2022  # 更新为 windows-2022
     strategy:
       matrix:
         mingw: ["MINGW32", "MINGW64"]
         include:
           - mingw: "MINGW32"
             package: "mingw-w64-i686"
-          - mingw: "MINGW64"
+          - mingw: "MINGW64" 
             package: "mingw-w64-x86_64"
     defaults:
       run:
@@ -25,19 +25,19 @@ jobs:
       CHERE_INVOKING: 1
     name: MSYS2 ${{ matrix.mingw }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up shell
-        run: echo "C:\msys64\usr\bin\" >> $GITHUB_PATH
-        shell: pwsh
+      - uses: actions/checkout@v4  # 更新checkout版本
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2  # 使用专门的MSYS2 setup
+        with:
+          update: true
+          install: |
+            base-devel
+            ${{ matrix.package }}-toolchain
+            make
       - name: Print system version
         run: |
-          uname
-      - name: Install MinGW requirements
-        run: |
-          echo "$GITHUB_WORKSPACE"
-          #pacman -S --noconfirm ${{ matrix.package }}-python3-setuptools
-          # build the project
-          #python3 setup.py install
+          uname -a
+          gcc --version
       - name: Build binaries
         run: |
           cd extractps3iso
@@ -49,16 +49,13 @@ jobs:
           cd ../splitps3iso
           make
           cd ..
-
       - name: Get short SHA
         id: slug
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-    
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
       - name: Compress output
         run: |
           tar -zcvf build.tar.gz extractps3iso/extractps3iso.exe makeps3iso/makeps3iso.exe patchps3iso/patchps3iso.exe splitps3iso/splitps3iso.exe
-
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4  # 更新upload-artifact版本
         with:
           name: build-${{ steps.slug.outputs.sha8 }}-${{matrix.mingw}}
           path: build.tar.gz
