@@ -773,7 +773,7 @@ int main(int argc, const char* argv[])
                 }
 
                 if((int) idr->name_len[0] > 1 && idr->flags[0] != 0x2 &&
-                    idr->name[idr->name_len[0] - 1]== '1' && idr->name[idr->name_len[0] - 3]== ';') { // skip directories
+                    if((int)idr->name_len[0] > 1 && idr->flags[0] != 0x02) { // skip directories
                     
                     memset(wstring, 0, 512 * 2);
                     memcpy(wstring, idr->name, idr->name_len[0]);
